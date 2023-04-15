@@ -7,7 +7,7 @@
 2. wm2 aims to avoid obsolescence as good as possible.
 3. wm2 aims to be as efficient as possible.
 4. wm2 aims to be testable by an automatic test runner (this includes both the core source code and user defined patches).
-5. wm2 aims to be very robust e.g. never break during performance time.
+5. wm2 aims to be very robust e.g. aims to never break during performance time.
 
 
 ## Architecture
@@ -75,17 +75,36 @@ Hint: yaml supports multiline strings, so we can write csound code within yaml. 
 
 1. A cue MUST be active or inactive.
 2. A cue MUST describe which modules of the graph are active if the given cue itself is active.
+3. A cue MUST be automatically testable.
+
+
+## Cue testing
+
+1. A cue must be tested by checking whether it produces the expected results.
+
+
+## Cue grid
+
+
+## TUI
+
+1. wm2 runs in a terminal user interface (TUI) like htop, vim, etc.
+2. Within this TUI the user can select cues to be played and run basic input/output tests. The TUI also provides logging.
 
 
 ## Sequencing
 
 
-## Grid
-
 
 ## Configuration
 
-1. A wm2 patch is defined by two YAML files.
+1. A wm2 patch is defined by four YAML files.
+2. The first YAML file is a definition of global constants. They are accessible from all other configuration files.
+3. The second YAML file is a set of (DSP) module definitions.
+4. The third YAML file is the definition of the (DSP) module chain e.g. the graph part.
+5. The fourth and last YAML file is the definition of cues.
+6. Only a wm2 patch which provides all four files is considered to be complete and usable.
+7. To simplify this requirement wm2 provides default files for global constants and (DSP) module definitions.
 
 
 ## Dependencies
