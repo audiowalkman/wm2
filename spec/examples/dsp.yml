@@ -1,0 +1,31 @@
+# module
+audio-input:
+    # replication key
+    0:
+        # init-args
+        iIndex: 0
+    1:
+        iIndex: 1
+
+
+compressor:
+    0:
+        audio-input-0:
+            audio-input:
+                - 0
+    1:
+        audio-input-0:
+            audio-input:
+                - 1
+
+# Override default value of default input "value".
+value:
+    compressor.0.kRatio:
+        iValue: 200
+
+audio-output:
+    0:
+        audio-input-0:
+            compressor:
+                - 0
+                - 1

@@ -1,0 +1,37 @@
+compressor:
+    audio-input:
+        - aInput0
+    audio-output:
+        - aOutput0
+    control-input:
+        # here we can specify the default value of "value".
+        # therefore this doesn't need to be a list anymore, right?
+        # can we generalize this so that we also don't have any lists anymore
+        # for audio input / output?
+        - kRatio: 20
+    # They can be set at graph definition
+    init-args:
+        iRatio: 3
+    # They can be set at cue definition
+    runtime-args:
+        iThreshold: 0
+        iLowKnee: 40
+        iHighKnee: 60
+    csound: |
+        aOutput0 compress aInput0, aInput0, iThreshold, iLowKnee, iHighKnee, kRatio
+
+audio-input:
+    audio-output:
+        - aOutput0
+    init-args:
+        iIndex: 0
+    csound: |
+        aOutput0 in
+
+value:
+    control-output:
+        - kValue
+    runtime-args:
+        iValue: 0
+    csound: |
+        kValue = iValue

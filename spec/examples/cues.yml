@@ -1,0 +1,9 @@
+one:
+    audio-input:
+        - 0
+        - 1
+
+two:
+    compressor:
+        - 0:
+            iLowKnee: 20

@@ -1,4 +1,4 @@
-# Spec wm2
+# Specifications for wm2
 
 
 ## wm2
@@ -54,6 +54,21 @@ XXX: So this is again pyo specific: a pyo object could have multiple inputs/outp
      On the other hand it gives a higher flexibility to think that we *could* pass the second stream of an audio channel
      to a different effect than the first stream of an audio channel (but I don't know if it ever helps in practice).
      Hint: Csound uses "chnset" and "chnget" to send/receive inputs/outputs between instruments.
+
+
+
+## (DSP) module definition
+
+1. A (DSP) module MUST be defined by using YAML.
+2. This makes the public API very clear: all parts which can be user defined MUST be written in yaml. Those yaml files MUST support the same format as long as possible and they shouldn't break. The python part on the other hand can change because it's not part of the public API.
+3. Some special module classes are excluded from (1). They are predefined and can't be changed by the user.
+
+Hint: yaml supports multiline strings, so we can write csound code within yaml. This sounds much better
+      than using external text files or python strings to write the csound code. Then this csound code can assume
+      that there are some predefined variables as { aInput0, aInput1, kInput0, ... }, depending on the provided values
+      to other arguments of the module definition (audio-input-count, ...). This csound code also needs to define
+      specific variables as { aOutput0, aOutput1, ... }, otherwise the code is considered to be malicious and won't
+      be executed.
 
 
 ## Cue

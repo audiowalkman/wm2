@@ -1,0 +1,22 @@
+audio-input:
+    {{ i }}:
+        iIndex: {{ i }}
+    loop:
+        - 0
+        - 1
+
+compressor:
+    {{ i }}:
+        audio-input-0:
+            audio-input:
+                - {{ i }}
+    loop:
+        - 0
+        - 1
+
+audio-output:
+    0:
+        audio-input-0:
+            compressor:
+                - 0
+                - 1

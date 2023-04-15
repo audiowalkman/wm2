@@ -1,0 +1,25 @@
+compressor:
+    audio-input-count: 1
+    audio-output-count: 1
+    control-input-count: 1
+    # They can be set at graph definition
+    init-args:
+        iRatio: 3
+    # They can be set at cue definition
+    runtime-args:
+        iThreshold: 0
+        iLowKnee: 40
+        iHighKnee: 60
+    csound: |
+        kRatio = kInput0
+        aOutput0 compress aInput0, aInput0, iThreshold, iLowKnee, iHighKnee, kRatio
+    doc: |
+        This module ueses the compress opcode of csound.
+        You can compress your signal with this module.
+
+audio-input:
+    audio-output-count: 1
+    init-args:
+        iIndex: 0
+    csound: |
+        aOutput0 in
