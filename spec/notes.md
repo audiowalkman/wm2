@@ -41,6 +41,23 @@ Does something similar exist for csound?
 => the question is only: how would timing then work? because this is currently controlled
    by pyo. i think this is kind of the fundamental problem when switching to csound..
 
+=> => csound would only be responsible for the DSP, but not for the time: another software
+      would need to be responsible for this. which software would this be?
+
+      => perhaps we **can** do this in python, we only need to have a better sleep method:
+
+        => sleep is imprecise and will always be
+        => once we slept and want to sleep the next time, we check how much time passed
+           between the first sleep and if it's longer we sleep shorter to avoid the swing:
+           in this way we have a higher precision.
+        => not sure how the api of such a process would look like though, maybe something
+           like a metro?
+        => it's in fact only problem for a sequencer, and a sequencer works by
+            - [playing an event, waiting], playing the next event
+            - it knows the durations of the previous event and fix the drift
+            - it's also a problem that the processing until the waiting takes to long,
+              so we'd also actually need to wait shorter
+
 ---
 
 # cue polyphony
