@@ -1,4 +1,22 @@
 
+# csound vs. pyo ('manual mode'): unit testing
+
+in pyo we can pass the 'manual mode' to the audio server:
+with this 'manual mode' we can run the DSP and control whenever
+an audio cycle should be proceeded, this is extremely valuable for
+unit tests, as it allows us to check if a module is playing/not playing as
+expected, so it's a possibility to test audio in a unit test (which is otherwise
+more or less impossible, as far as I can see..)
+
+Does something similar exist for csound?
+
+=> maybe the same thing can be archived, by writing the sound file to disk
+   and checking if a sound exists at a certain time? but this seems to be
+   less easy.. generally it'll be more difficult with csound, as we can't simply
+   ask for the current sample/amplitude at a random moment..
+
+---
+
 # cue polyphony
 
 - we may need a cue polyphony to solve multiple problems
@@ -9,7 +27,98 @@
 
 - this needs a cue polyphony:
     - so we need to have a cue manage which support multithreading
-    - perhaps we need locks, so the activiation of CUE B doesn't interrupt the activation of CUE B
+    - perhaps we need locks, so the activiation of CUE B doesn't interrupt the activation of CUE A
+    - then, whenever a cue is activated it's checked:
+        - is this module still needed by any cue? => if no cue exists anymore which needs this module, deactivate it
+    - how would we check that two cues don't control the same modules?
+        - because this certainly needs to be prohibited
+        - maybe each module has a lock, and as long as one cue holds
+          a module, another cue can't hold it?
+        - but this would only be the-last-resort safety check, if the cue manager
+          finds two cues that aim to control the same module
+        - it would be better to entirely disallow the activation of two
+          cues that control the same modules
+        - on the other hand this seems to be unavoidable: imagine
+          two different cue-families, where the first family controls
+          synth A and the second cue family controls synth B, but both
+          synths are outputting to the main mixer output: so both cue
+          families actually want to start the main mixer. now this would
+          already be a conflict, how could it be solved then?
+        - perhaps the difference is between cues that change the RUNTIME
+          parameters of a module and cues that don't change the RUNTIME
+          parameters of a module. or maybe more precisely: **if two cues
+          set a module to the same RUNTIME parameters, they can run
+          simultaneously.**
+        - not sure if this last point is true (what about two cues that
+          want to start a sound file?), but it seems quite good, maybe
+          corner cases which contradict this understanding can be ignored..
+          in the end it's still the users responsibility to avoid starting
+          two contradicting modules.
+
+        - maybe it's not even problematic if two cues control the same module
+          with different parameters, as it's always a sequential process: first
+          cue X activates the module with parameters A, and then cue Y activates
+          the module with parameters B: what's kind of problematic is that the
+          system state is no longer what CUE X expects to be, so it's on, but kind
+          of pointless, and it depends on wehter CUE X or CUE Y is faster, so it's
+          kind of a race condition which system state is true, so in fact it
+          is kind of problematic and may lead to bad bugs!
+
+        - so maybe the "Orchestrator" should have a state:
+
+            module_info = (module_name, module_state (runtime_args), cue_list)
+
+            where 'cue_list' consist of all cues that asks for the activation of
+            thos module.
+
+            => it's clear than that a module can only have exactly one state/runtime
+               args, which must be okay for all cues in 'cue_list', otherwise we have
+               a problem
+
+            => if a cue is activated with contradicting data, a warning is raised,
+               the cue won't be added to the modules 'cue_list' and that's it :)
+
+        - in a way, WM2 can be understood as a DPS module orchestrator, at
+          least the part of the 'cue manager' (maybe it should be renamed to
+          'Orchestrator').
+
+    - i wonder if it's possible to implement this so fast to still avoid
+      long delays between various cues: if we really want to make a sequencer
+      with cues, so we are talking about the note-level speed, and now imagine
+      two sequencers playing very fast melodies, 160 BPM, and the cue orchestrator
+      needs to be run at each new note (running all the checks about which module can
+      be activated etc..), this needs to be quite fast, particularly because we need
+      to do some stuff with locks / not concurrently..
+        
+    - btw: if we talk about AUTOMATIC NOTE-LEVEL sequencing, this may be impossible
+      to do with pure python, because this needs to be precise miliseconds time, and
+      pythons builtin time module IS DRIFTING! therefore with pure python, MODULE
+      SEQUENCING ON NOTE LEVEL WON'T WORK!
+
+
+- cue playing other cues:
+    - but here it seems to be important that a cue, which
+      plays other cues, can't be started from lower cues:
+
+      so cue 1 plays
+
+        cue 2a
+        cue 2b
+        cue 2c
+
+      so none of the cue2 family of cues can start/stop
+      cue 1 in order to avoid strange bugs.
+
+      so maybe there is something like a 'cue hierarchy',
+      which prevents cues of the lower level to control
+      cues of the higher level. cues on the same level can
+      neither control each other.
+
+      maybe it's sufficient here to specify a 'level' parameter:
+
+cue:
+    2a:
+        level: 2
 
 ---
 
@@ -101,8 +210,14 @@ does this mean we should better use jinja2 again? i don't know...
     -> dass es mehr dependencies gibt
 
 => der vorteil ist: ich muss weniger denken und programmieren :)
-             
+=> und es gibt ja auch noch andere logiken, die ich brauechte, neben loops:
 
+    - imports (for instance to differentiate between various cue sections)
+    - if/else clause
+    - loops
+             
+=> vielleicht ist es daher doch einfacher, wenn alles am ende einfach nur eine grosse datei
+   ist und die imports/ifelse/loops von einer template sprache geloest werden.
 
 ---
 
