@@ -1,3 +1,18 @@
+
+# cue polyphony
+
+- we may need a cue polyphony to solve multiple problems
+    - sequencing should also work with the cue system to gain the advantages of
+      partial de/activation of DSP modules
+    - some cues should be allowed to run while another cue is started (simultaneous usage
+      of two different cues
+
+- this needs a cue polyphony:
+    - so we need to have a cue manage which support multithreading
+    - perhaps we need locks, so the activiation of CUE B doesn't interrupt the activation of CUE B
+
+---
+
 # wm2 necessities for a sane usage:
 
 - option for gui view of each module input/output level (meter)! 
