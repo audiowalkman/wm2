@@ -1,3 +1,18 @@
+# wm2 necessities for a sane usage:
+
+- option for gui view of each module input/output level (meter)! 
+
+- audio output/input tests!
+
+- midi output/input tests!
+
+- allow debug messages
+
+- visualisation of graph
+
+---
+
+
 # yml loop
 
 - for minimal logic we should adjust to the way how ansible does it (they have yml files with additional logic like loops, if conditions, etc.)
