@@ -1,4 +1,3 @@
-
 # csound vs. pyo ('manual mode'): unit testing
 
 in pyo we can pass the 'manual mode' to the audio server:
@@ -14,6 +13,33 @@ Does something similar exist for csound?
    and checking if a sound exists at a certain time? but this seems to be
    less easy.. generally it'll be more difficult with csound, as we can't simply
    ask for the current sample/amplitude at a random moment..
+
+=> actually it's also possible to control csound to only process one buffer/ one control cycle:
+
+    https://csound.com/docs/ctcsound/ctcsound-API.html#ctcsound.Csound.performKsmps
+
+    combined with non-realtime mode, we may indeed do unit tests with csound
+
+=> what i'm more concered with is: in ``10.1`` i used pyo to control the timing
+   to send data to my arduino.
+
+   so there was a walkman module which, when activated, send data to the arduino:
+
+    https://github.com/levinericzimmermann/project/blob/10.1/walkman_modules.aeolian/walkman_modules/aeolian/__init__.py#L174-L340
+
+   this module was based on the python class "Protocol":
+
+    https://github.com/levinericzimmermann/project/blob/10.1/walkman_modules.aeolian/walkman_modules/aeolian/__init__.py#L72-L107
+
+   if we move timing to csound, is something like this still possible?
+
+=> i mean a module wouldn't need csound code, would it? maybe this
+   would only be a "CSModule" => a "CSoundModule".
+
+=> but this module which played the arduino could be a "ARDModule" and "ArduinoModule"
+
+=> the question is only: how would timing then work? because this is currently controlled
+   by pyo. i think this is kind of the fundamental problem when switching to csound..
 
 ---
 
