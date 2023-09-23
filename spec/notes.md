@@ -1,3 +1,248 @@
+# defining islands
+
+in wm1, users could define custom modules by defining a module in the namespace package 'walkman_modules':
+the defined modules were implicitly loaded to the list of available modules.
+
+in wm2 we should rather choose a more explicit and simpler approach:
+wm2 should offer a 'register_island_type' function, with which a class could
+be decorated (or called) and then this island_type would be added to the list of known
+islands types.
+
+
+# defining islands 2
+
+for csound islands, the initial spec assumes that it's possible to define island types within the yml configs:
+
+
+```
+compressor:
+    audio-input-count: 1
+    audio-output-count: 1
+    control-input-count: 1
+    # They can be set at graph definition
+    init-args:
+        iRatio: 3
+    # They can be set at cue definition
+    runtime-args:
+        iThreshold: 0
+        iLowKnee: 40
+        iHighKnee: 60
+    csound: |
+        kRatio = kInput0
+        aOutput0 compress aInput0, aInput0, iThreshold, iLowKnee, iHighKnee, kRatio
+    doc: |
+        This module ueses the compress opcode of csound.
+        You can compress your signal with this module.
+```
+
+that's indeed nice, but could this fit into the more generalized island-model which we approach here?
+
+# yml
+
+btw there is a problem if we define island instances like this:
+
+
+```
+cue:
+    b_0_00:
+        islands:
+            convolution_reverb.b_reverb_1:
+    b_0_14:
+        islands:
+            pitch_shifter.b_pitch_shifter:
+            convolution_reverb.b_reverb_1:
+```
+
+
+cue:
+    sine-and-noise:
+        islands: ["cs.sine", "cs.mixer", "cs.noise"]
+    sine-only:
+        islands: ["cs.sine", "cs.mixer"]
+
+if...
+
+- we want to add somewhere else in the config file another 'island' to a cue    => this is impossible.
+- we want to add in another file more cues                                      => this is impossible
+
+because keys are only allowed to be defined once!
+
+so maybe we would need a different approach.
+perhaps this different approach is necessary anyway, because of the generalization of cue/module to island
+and because of the single-file-approach.
+
+
+1. genereally: use lists instead of plain keys, if things should be redefineable
+
+=>
+
+    a wm2 config file is a list of dict, and not a dict (like wm2 config file)
+
+```
+- ...
+- ...
+- ...
+```
+
+
+```
+(def-cue
+    (sine (sine mixer))
+    (noise (noise mixer)))
+```
+
+why yaml and not scheme?
+because it's too much perhaps?
+
+```
+- def-cue
+```
+
+
+LISTS is also ugly, because if you have a command (like 'define X')
+the dict in which the command resides could also contain more commands,
+it just doesn't make sense :)
+
+
+=>=>
+
+maybe it should really just be like this:
+
+
+```
+$ISLAND_NAME:
+    $REPLICATION_KEY:
+        $INIT_ARG_NAME: $INIT_ARG_VALUE
+```
+
+('grid-index' and 'offset' are also just normal init args)
+
+and what's about global configuration and csound island type definitions?
+what's about:
+
+```
+configure:
+    ...
+
+islands:
+    ...
+
+definitions:
+    ...
+```
+
+```yml
+configure:
+    audio: "jack"
+    sampling-rate: 44100
+    name: "test200"
+
+islands:
+    # module definitions
+    cs-sine:
+        0:
+            frequency: 440
+    cs-noise:
+        0:
+    # cue definitions
+    cue:
+        sine:
+            cs-sine.0:
+            mixer.master:
+        noise:
+            cs-noise.0:
+            mixer.master:
+```
+
+
+=>=>
+    maybe wm2 allows to load multiple patches?
+
+but the restrictions with no double keys are
+actually not so bad, i think!
+they simplify a lot of things...
+
+
+=> instead of allowing multiple patches, we
+   may add a special "import-file" keyword, which imports
+   a file at whatever position:
+
+
+```yml
+
+islands:
+    cue:
+        !load section-0.yml:
+        !load section-1.yml:
+```
+
+
+```section0.yml
+section0-cue0:
+section0-cue1:
+```
+
+```section1.yml
+section1-cue0:
+```
+
+etc.
+
+# curses libraries
+
+curses is very low level and a lot of work to write something useful, why don't use
+
+- https://github.com/urwid/urwid
+    - http://urwid.org/reference/widget.html?highlight=bar#urwid.BarGraph
+    => this seems to be the best, widely developed, not too big, but a sufficient amount of widgets
+
+- https://github.com/pfalcon/picotui
+- https://github.com/peterbrittain/asciimatics
+
+
+
+- https://github.com/pfalcon/pycopy btw :)
+
+
+
+# islands
+
+instead of defining 'cues' and 'modules', we should simply define islands.
+an island has a position in the grid. an island could be anything:
+
+- a dsp module
+- a meta island, that controls other islands (e.g. a 'cue' or a 'sequencer')
+- a program which sends data to an arduino
+- ...
+
+so we generalize all of these different data types into one general data type,
+which has methods of
+
+    - play
+    - stop
+    - ...?
+
+with this we also have a single interface how to control these data types in
+the gui: all of them are one point in the grid and can be activated/stopped by
+pressing them. easy and simple.
+
+# sequencer as island
+
+so a sequencer is simply an island which receives as a runtime argument a path
+to a file which consists a list of events, where each event is defined of:
+
+    - island-to-activate-name, duration, runtime-arguments-for-the-activated-island
+
+that's it :)
+
+# single file approach
+
+wm1 had this very simple 'single-file-approach'.
+in fact this simple approach was very helpful, because it made it extremely flexible,
+as - with the help of jinja - it actually meant: an infinite/self-decided number of
+files approach. we should stick to this instead of telling the user a specific
+file structure.
+
 # csound vs. pyo ('manual mode'): unit testing
 
 in pyo we can pass the 'manual mode' to the audio server:
@@ -61,6 +306,15 @@ Does something similar exist for csound?
 ---
 
 # cue polyphony
+
+- idea: we can define
+
+    - a cue             ==  a system state
+    - a cue manager     ==  a system state
+    - delta cue         ==  difference between 2 system states
+
+    => so we can understand the 'graph' as the system and the current in/active modules as a state of this system
+
 
 - we may need a cue polyphony to solve multiple problems
     - sequencing should also work with the cue system to gain the advantages of
@@ -166,6 +420,10 @@ cue:
 ---
 
 # wm2 necessities for a sane usage:
+
+- automatic protection of too loud signals
+
+- gui master volume setter
 
 - option for gui view of each module input/output level (meter)! 
 
