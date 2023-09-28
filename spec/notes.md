@@ -1,3 +1,266 @@
+# gui view
+
+- maybe the gui could be composed of 3 windows:
+
+    - left:     grid view
+    - right:    island view
+    - bottom:   logs
+
+the 'island view' is just an empty canvas, which could be filled with anything, e.g.
+
+    - a volume meter
+    - a printing of the connected islands (DSP graph view)
+    - a text telling us something
+    - ...
+
+then we could also define GUI elements with islands, for instance
+
+- a specific island type to display incoming midi messages
+- a specific island type to meter volume (and just any input csound island is ok)
+
+then not each csound module would need to be able to log its data, but a csound
+module could be send to a another gui csound meter island, with which we can check the
+data..this makes everything even more generalized, so i think it's a very good idea.
+
+# explicit play
+
+in wm1 play was difficult to understand because of its implicity:
+if an object was playing, the 'play' method didn't affect anything.
+
+- maybe we can simplify this, so that the objects state doesn't matter?
+- or we could make it explicity:
+    - ``force-play-if-playing: bool``
+
+
+
+# package structure
+
+
+(basic question: how to retrieve global objects as csound backend, islands dict, island type dict, ...?)
+
+should we split patch and global state?
+
+so that we have a global audio/midi state and we can load patches as we like?
+
+this makes things more complicated, so let's first avoid it.
+
+but then it's still a question:
+because if we can have multiple patches the csound server isn't part of the
+patch but part of the global program state.
+
+and maybe it's not really more complicated, but makes things a bit cleaner/clearer,
+increases flexibility and tackles real situations:
+
+we could drop parts of the patchs configurations settings and instead
+have a dedicated "config" part, which configures the running wm2 software.
+
+then "wm2" could start csound and more before it loads the actual patch, this
+could help preventing some bugs.
+
+so the wm2 cli would be:
+
+    wm2 --config $config --patch $patch $patch-globals
+
+where the globals could be used for mustache in patch.
+
+and maybe we should indeed also move the definitions.yml to a dedicated file?
+
+    wm2 --config $config --patch $patch --patch-globals $globals
+
+the thing is, regarding the "one-file-approach": this approach is still true,
+as all the user defined things (except of audio config) that were part of one file
+in wm1 are STILL PART of only one file, because all the things like DEFINITIONS were
+impossible to define in a wm1 toml file!!
+
+
+    wm2 --config $CONFIG --yml-def $DEFINITION --init-patch $PATCH $PATCH_GLOBALS
+
+and maybe $DEFINITION can either be a YML file OR a python file:
+
+    - in case of yml file:      parse the island definitions
+    - in case of python file:   load the python file
+
+or maybe not, I think it's a bad idea :)
+
+maybe we can add a parameter in the "config" for python extensions?
+
+```
+configure:
+    sampling-rate:
+    ...
+    extensions:
+        - my-extension
+```
+
+and then wm2 automatically loads the module "my-extension":
+when loading "my-extension" this "extension" should then include
+island definitions.
+
+maybe "wm2" can log how many island types existed before "my-extension"
+was loaded and how many island types exist afterwards :)
+
+```
+class WM2:
+    def __init__(
+        self,
+        config: str | Config,
+        yml_def: Optional[str | YmlDef] = None,
+        patch: Optional[Patch] = None
+    ):
+        ...
+        initialise...
+        ...
+        self.load_patch(patch)
+
+    def run(self):
+        ...
+```
+
+in python started wm2:
+
+```
+import wm2
+wm2.WM2("config.yml", patch="patch.yml").run()
+```
+
+
+wm2             =>
+
+                        => hosts global program state
+                            => current patch
+                            => csound backend
+                            => gui
+                        => gateway into wm2 open/close
+                        => .load_patch(patch: Patch)
+                            => can be successful or unsuccesful, but program doesn't exit,
+                               only warnings are printed
+
+
+patch           =>
+(object)
+                        => yml/mustache parser
+                            => global variables (for mustache)
+                            => island definitions
+                        => contains patch data:
+                            => defined islands
+
+
+global api      =>
+
+                        => get_island_type_dict()
+                        => get_csound()
+
+
+islands         =>
+(abc, register)         => orchestrator (request_play, request_stop)
+                           judge (judge, accept, reject)
+                        => dummy
+                        => csound
+                        => cues
+                        => sequencer
+
+
+
+gui             =>
+
+                        => grid view
+                        => logger
+                        => extra-commands (test audio, test midi, ...)
+                        => volume meter
+
+
+cli             =>
+
+                        => program start => simple wrapper for "wm2.WM2.run(..parameters..)"
+
+
+# yml + mustache
+
+this really seems to be the best combination, it's also better to use mustache, instead
+of defining custom logic in yml, because:
+
+- we need a special syntax to indicate the state anyway
+- the differentiation between config + logic is very clear
+- it's less work and therefore less mistakes
+
+# patching mustache
+
+but we may need to patch mustache in order to allow some additional behaviour:
+
+(we may do so by monkey-patching mustache parser code)
+
+- range like functions could be added ad-hoc:
+    - users could write {{#range-10}} and then in the parser, if mustache can't find it, we can patch it so that if not defined, define it and restart
+- imports of files should perhaps be relative paths
+- imports of files should respect the current indentation:
+    - this may be the most difficult todo
+    - imagine a yml like this
+
+```
+islands:
+    {{>csound-modules.yml}}
+    {{>cues.yml}}
+```
+
+
+and then `csound-modules.yml`:
+
+```
+sine:
+    example:
+        frequency: 440
+mixer:
+    master:
+        audio-input-0: "sine.example"
+```
+
+and then `cues.yml`:
+
+```
+cue:
+    example:
+        islands:
+            sine:
+                example:
+            mixer:
+                master:
+    silent:
+        islands:
+            mixer:
+                master:
+```
+
+
+the final file should look like:
+
+
+```
+islands:
+    sine:
+        example:
+            frequency: 440
+    mixer:
+        master:
+            audio-input-0: "sine.example"
+    cue:
+        example:
+            islands:
+                sine:
+                    example:
+                mixer:
+                    master:
+        silent:
+            islands:
+                mixer:
+                    master:
+```
+
+so that the 4 line spache of the mustache tag should indicate,
+that the imported file must also be adjusted.
+
+
+
+
 # defining islands
 
 in wm1, users could define custom modules by defining a module in the namespace package 'walkman_modules':
