@@ -2,16 +2,16 @@
 
 - maybe the gui could be composed of 3 windows:
 
-    - left:     grid view
-    - right:    island view
-    - bottom:   logs
+- left:     grid view
+- right:    island view
+- bottom:   logs
 
 the 'island view' is just an empty canvas, which could be filled with anything, e.g.
 
-    - a volume meter
-    - a printing of the connected islands (DSP graph view)
-    - a text telling us something
-    - ...
+- a volume meter
+- a printing of the connected islands (DSP graph view)
+- a text telling us something
+- ...
 
 then we could also define GUI elements with islands, for instance
 
@@ -21,6 +21,32 @@ then we could also define GUI elements with islands, for instance
 then not each csound module would need to be able to log its data, but a csound
 module could be send to a another gui csound meter island, with which we can check the
 data..this makes everything even more generalized, so i think it's a very good idea.
+
+this ISLAND VIEW window could also be used as a graphical UI for...
+
+- a slider, where the user can move a specific parameter (=> useful for specifying runtime parameters)
+- textboxes where the user can enter values
+
+or maybe there are two different ISLAND VIEWs which can be toggled when we are with the cursor on a given island:
+
+1. VIEW
+2. EDIT
+
+and they are created by two different special methods:
+
+```python
+class Island(abc.ABC):
+    # __view__ returns an islands view in the GUI, which appears
+    # when our cursor is on the given island.
+    def __view__(self):
+        ...
+
+    # __edit__ returns an island edit view in the GUI, which appears
+    # when our cursor is on the given island an the the user toggls
+    # to change from island view to island edit view.
+    def __edit__(self):
+        ...
+```
 
 # explicit play
 
