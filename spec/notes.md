@@ -1,3 +1,17 @@
+# lua instead of python
+
+- also small like scheme (better permacomputing properties than python)...
+- ...but with a bigger community and a greater support...
+- ...also easier to write stateful code :)
+
+lua libraries:
+
+- for objects/classes: https://github.com/kikito/middleclass
+- for tui: https://github.com/tboox/ltui
+- for csound: https://www.csounds.com/journal/issue13/BasicLuawithCsound.html
+- for mustache: https://github.com/Olivine-Labs/lustache
+- for yml: https://github.com/gvvaughan/lyaml
+
 # gui view
 
 - maybe the gui could be composed of 3 windows:
