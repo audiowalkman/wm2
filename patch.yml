@@ -1,0 +1,22 @@
+configure:
+
+  channel_count: 2
+  sampling_rate: 44100
+
+
+declare:
+
+  sine:
+    test1:
+    test2:
+
+
+register:
+
+  csound:
+
+    sine:
+      csound: |
+        asig oscil 0.4, 200
+        kenv linenr 1, 2, 2, 0.005
+        out asig * kenv
